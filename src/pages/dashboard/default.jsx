@@ -1,309 +1,341 @@
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from "react";
 
-// material-ui
-import Avatar from '@mui/material/Avatar';
-import AvatarGroup from '@mui/material/AvatarGroup';
-import Button from '@mui/material/Button';
-import Grid from '@mui/material/Grid';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
+// MUI
+import {
+  Avatar,
+  Grid,
+  Typography,
+  Stack,
+  Box,
+  CircularProgress,
+  Alert,
+  Chip,
+  Paper
+} from "@mui/material";
 
-// project imports
-import MainCard from 'components/MainCard';
-import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
-import MonthlyBarChart from 'sections/dashboard/default/MonthlyBarChart';
-import ReportAreaChart from 'sections/dashboard/default/ReportAreaChart';
-import UniqueVisitorCard from 'sections/dashboard/default/UniqueVisitorCard';
-import SaleReportCard from 'sections/dashboard/default/SaleReportCard';
-import OrdersTable from 'sections/dashboard/default/OrdersTable';
+import {
+  Assignment,
+  HourglassEmpty,
+  CheckCircle,
+  Cancel
+} from "@mui/icons-material";
 
-// assets
-import EllipsisOutlined from '@ant-design/icons/EllipsisOutlined';
-import GiftOutlined from '@ant-design/icons/GiftOutlined';
-import MessageOutlined from '@ant-design/icons/MessageOutlined';
-import SettingOutlined from '@ant-design/icons/SettingOutlined';
-
-import avatar1 from 'assets/images/users/avatar-1.png';
-import avatar2 from 'assets/images/users/avatar-2.png';
-import avatar3 from 'assets/images/users/avatar-3.png';
-import avatar4 from 'assets/images/users/avatar-4.png';
-
-// avatar style
-const avatarSX = {
-  width: 36,
-  height: 36,
-  fontSize: '1rem'
-};
-
-// action style
-const actionSX = {
-  mt: 0.75,
-  ml: 1,
-  top: 'auto',
-  right: 'auto',
-  alignSelf: 'flex-start',
-  transform: 'none'
-};
-
-// ==============================|| DASHBOARD - DEFAULT ||============================== //
+// API
+import { getProfile, getDashboardStats } from "./dashboardService";
 
 export default function DashboardDefault() {
-  const [orderMenuAnchor, setOrderMenuAnchor] = useState(null);
-  const [analyticsMenuAnchor, setAnalyticsMenuAnchor] = useState(null);
+  const token = localStorage.getItem("token");
 
-  const handleOrderMenuClick = (event) => {
-    setOrderMenuAnchor(event.currentTarget);
-  };
-  const handleOrderMenuClose = () => {
-    setOrderMenuAnchor(null);
-  };
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({
+    menunggu: 0,
+    disetujui: 0,
+    ditolak: 0,
+    total: 0
+  });
 
-  const handleAnalyticsMenuClick = (event) => {
-    setAnalyticsMenuAnchor(event.currentTarget);
-  };
-  const handleAnalyticsMenuClose = () => {
-    setAnalyticsMenuAnchor(null);
-  };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchAll = useCallback(async () => {
+    if (!token) {
+      setError("Token tidak ditemukan");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const [profileRes, statsRes] = await Promise.all([
+        getProfile(token),
+        getDashboardStats(token)
+      ]);
+
+      // ✅ HANDLE SEMUA FORMAT RESPONSE
+      const profileData =
+        profileRes?.data?.data || profileRes?.data || null;
+
+      if (!profileData) throw new Error("Profile kosong");
+
+      setUser(profileData);
+
+      const statsData =
+        statsRes?.data?.data || statsRes?.data || {};
+
+      setStats({
+        menunggu: statsData?.menunggu ?? 0,
+        disetujui: statsData?.disetujui ?? 0,
+        ditolak: statsData?.ditolak ?? 0,
+        total: statsData?.total ?? 0
+      });
+
+    } catch (err) {
+      console.error("ERROR DASHBOARD:", err);
+      setError("Gagal memuat dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  // ✅ DEBUG
+  useEffect(() => {
+    if (user) {
+      console.log("USER FINAL:", user);
+    }
+  }, [user]);
 
   return (
-    <Grid container rowSpacing={4.5} columnSpacing={2.75}>
-      {/* row 1 */}
-      <Grid sx={{ mb: -2.25 }} size={12}>
-        <Typography variant="h5">Dashboard</Typography>
-      </Grid>
-      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-        <AnalyticEcommerce title="Total Page Views" count="4,42,236" percentage={59.3} extra="35,000" />
-      </Grid>
-      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-        <AnalyticEcommerce title="Total Users" count="78,250" percentage={70.5} extra="8,900" />
-      </Grid>
-      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-        <AnalyticEcommerce title="Total Order" count="18,800" percentage={27.4} isLoss color="warning" extra="1,943" />
-      </Grid>
-      <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-        <AnalyticEcommerce title="Total Sales" count="35,078" percentage={27.4} isLoss color="warning" extra="20,395" />
-      </Grid>
-      <Grid sx={{ display: { sm: 'none', md: 'block', lg: 'none' } }} size={{ md: 8 }} />
-      {/* row 2 */}
-      <Grid size={{ xs: 12, md: 7, lg: 8 }}>
-        <UniqueVisitorCard />
-      </Grid>
-      <Grid size={{ xs: 12, md: 5, lg: 4 }}>
-        <Grid container sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Grid>
-            <Typography variant="h5">Income Overview</Typography>
-          </Grid>
-          <Grid />
-        </Grid>
-        <MainCard sx={{ mt: 2 }} content={false}>
-          <Box sx={{ p: 3, pb: 0 }}>
-            <Stack sx={{ gap: 2 }}>
-              <Typography variant="h6" color="text.secondary">
-                This Week Statistics
-              </Typography>
-              <Typography variant="h3">$7,650</Typography>
-            </Stack>
-          </Box>
-          <MonthlyBarChart />
-        </MainCard>
-      </Grid>
-      {/* row 3 */}
-      <Grid size={{ xs: 12, md: 7, lg: 8 }}>
-        <Grid container sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Grid>
-            <Typography variant="h5">Recent Orders</Typography>
-          </Grid>
-          <Grid>
-            <IconButton onClick={handleOrderMenuClick}>
-              <EllipsisOutlined style={{ fontSize: '1.25rem' }} />
-            </IconButton>
-            <Menu
-              id="fade-menu"
-              slotProps={{ list: { 'aria-labelledby': 'fade-button' } }}
-              anchorEl={orderMenuAnchor}
-              onClose={handleOrderMenuClose}
-              open={Boolean(orderMenuAnchor)}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            >
-              <MenuItem onClick={handleOrderMenuClose}>Export as CSV</MenuItem>
-              <MenuItem onClick={handleOrderMenuClose}>Export as Excel</MenuItem>
-              <MenuItem onClick={handleOrderMenuClose}>Print Table</MenuItem>
-            </Menu>
-          </Grid>
-        </Grid>
-        <MainCard sx={{ mt: 2 }} content={false}>
-          <OrdersTable />
-        </MainCard>
-      </Grid>
-      <Grid size={{ xs: 12, md: 5, lg: 4 }}>
-        <Grid container sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Grid>
-            <Typography variant="h5">Analytics Report</Typography>
-          </Grid>
-          <Grid>
-            <IconButton onClick={handleAnalyticsMenuClick}>
-              <EllipsisOutlined style={{ fontSize: '1.25rem' }} />
-            </IconButton>
-            <Menu
-              id="fade-menu"
-              slotProps={{ list: { 'aria-labelledby': 'fade-button' } }}
-              anchorEl={analyticsMenuAnchor}
-              open={Boolean(analyticsMenuAnchor)}
-              onClose={handleAnalyticsMenuClose}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            >
-              <MenuItem onClick={handleAnalyticsMenuClose}>Weekly</MenuItem>
-              <MenuItem onClick={handleAnalyticsMenuClose}>Monthly</MenuItem>
-              <MenuItem onClick={handleAnalyticsMenuClose}>Yearly</MenuItem>
-            </Menu>
-          </Grid>
-        </Grid>
-        <MainCard sx={{ mt: 2 }} content={false}>
-          <List sx={{ p: 0, '& .MuiListItemButton-root': { py: 2 } }}>
-            <ListItemButton divider>
-              <ListItemText primary="Company Finance Growth" />
-              <Typography variant="h5">+45.14%</Typography>
-            </ListItemButton>
-            <ListItemButton divider>
-              <ListItemText primary="Company Expenses Ratio" />
-              <Typography variant="h5">0.58%</Typography>
-            </ListItemButton>
-            <ListItemButton>
-              <ListItemText primary="Business Risk Cases" />
-              <Typography variant="h5">Low</Typography>
-            </ListItemButton>
-          </List>
-          <ReportAreaChart />
-        </MainCard>
-      </Grid>
-      {/* row 4 */}
-      <Grid size={{ xs: 12, md: 7, lg: 8 }}>
-        <SaleReportCard />
-      </Grid>
-      <Grid size={{ xs: 12, md: 5, lg: 4 }}>
-        <Grid container sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Grid>
-            <Typography variant="h5">Transaction History</Typography>
-          </Grid>
-          <Grid />
-        </Grid>
-        <MainCard sx={{ mt: 2 }} content={false}>
-          <List
-            component="nav"
-            sx={{
-              px: 0,
-              py: 0,
-              '& .MuiListItemButton-root': {
-                py: 1.5,
-                px: 2,
-                '& .MuiAvatar-root': avatarSX,
-                '& .MuiListItemSecondaryAction-root': { ...actionSX, position: 'relative' }
-              }
-            }}
-          >
-            <ListItem
-              component={ListItemButton}
-              divider
-              secondaryAction={
-                <Stack sx={{ alignItems: 'flex-end' }}>
-                  <Typography variant="subtitle1" noWrap>
-                    + $1,430
-                  </Typography>
-                  <Typography variant="h6" color="secondary" noWrap>
-                    78%
-                  </Typography>
-                </Stack>
-              }
-            >
-              <ListItemAvatar>
-                <Avatar sx={{ color: 'success.main', bgcolor: 'success.lighter' }}>
-                  <GiftOutlined />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText primary={<Typography variant="subtitle1">Order #002434</Typography>} secondary="Today, 2:00 AM" />
-            </ListItem>
-            <ListItem
-              component={ListItemButton}
-              divider
-              secondaryAction={
-                <Stack sx={{ alignItems: 'flex-end' }}>
-                  <Typography variant="subtitle1" noWrap>
-                    + $302
-                  </Typography>
-                  <Typography variant="h6" color="secondary" noWrap>
-                    8%
-                  </Typography>
-                </Stack>
-              }
-            >
-              <ListItemAvatar>
-                <Avatar sx={{ color: 'primary.main', bgcolor: 'primary.lighter' }}>
-                  <MessageOutlined />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText primary={<Typography variant="subtitle1">Order #984947</Typography>} secondary="5 August, 1:45 PM" />
-            </ListItem>
-            <ListItem
-              component={ListItemButton}
-              secondaryAction={
-                <Stack sx={{ alignItems: 'flex-end' }}>
-                  <Typography variant="subtitle1" noWrap>
-                    + $682
-                  </Typography>
-                  <Typography variant="h6" color="secondary" noWrap>
-                    16%
-                  </Typography>
-                </Stack>
-              }
-            >
-              <ListItemAvatar>
-                <Avatar sx={{ color: 'error.main', bgcolor: 'error.lighter' }}>
-                  <SettingOutlined />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText primary={<Typography variant="subtitle1">Order #988784</Typography>} secondary="7 hours ago" />
-            </ListItem>
-          </List>
-        </MainCard>
-        <MainCard sx={{ mt: 2 }}>
-          <Stack sx={{ gap: 3 }}>
-            <Grid container sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-              <Grid>
-                <Stack>
-                  <Typography variant="h5" noWrap>
-                    Help & Support Chat
-                  </Typography>
-                  <Typography variant="caption" color="secondary" noWrap>
-                    Typical replay within 5 min
-                  </Typography>
-                </Stack>
-              </Grid>
-              <Grid>
-                <AvatarGroup sx={{ '& .MuiAvatar-root': { width: 32, height: 32 } }}>
-                  <Avatar alt="Remy Sharp" src={avatar1} />
-                  <Avatar alt="Travis Howard" src={avatar2} />
-                  <Avatar alt="Cindy Baker" src={avatar3} />
-                  <Avatar alt="Agnes Walker" src={avatar4} />
-                </AvatarGroup>
-              </Grid>
+    <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+      <Box sx={{ width: "100%", maxWidth: "1400px", px: { xs: 2, sm: 3 } }}>
+        <Grid container spacing={3}>
+
+          {error && (
+            <Grid item xs={12}>
+              <Alert severity="error">{error}</Alert>
             </Grid>
-            <Button size="small" variant="contained" sx={{ textTransform: 'capitalize' }}>
-              Need Help?
-            </Button>
-          </Stack>
-        </MainCard>
-      </Grid>
-    </Grid>
+          )}
+
+          <Grid item xs={12}>
+
+            {loading ? (
+              <Box
+                sx={{
+                  height: 110,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center"
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            ) : (
+              <WelcomeCard user={user} />
+            )}
+
+          </Grid>
+
+          <Grid item xs={12}>
+            <Paper sx={statsWrapperStyle}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Statistik Aktivitas
+              </Typography>
+
+              <Grid container spacing={3}>
+                {loading ? (
+                  <Grid item xs={12}>
+                    <Box
+                      sx={{
+                        height: 150,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center"
+                      }}
+                    >
+                      <CircularProgress />
+                    </Box>
+                  </Grid>
+                ) : (
+                  <StatsCards2 stats={stats} />
+                )}
+
+
+
+              </Grid>
+            </Paper>
+          </Grid>
+
+        </Grid>
+      </Box>
+    </Box>
   );
 }
+
+// ================= COMPONENT =================
+
+// ✅ FALLBACK MAP (ANTI GAGAL TOTAL)
+const kategoriMap = {
+  1: "PNS",
+  2: "PPPK Full Waktu",
+  3: "PPPK Paruh Waktu"
+};
+
+function WelcomeCard({ user }) {
+
+  // PRIORITAS: nama dari backend → fallback ke map ID
+  const kategoriLabel =
+    user?.kategori_pegawai ??
+    kategoriMap[user?.kategori_pegawai_id] ??
+    "Tidak diketahui";
+
+  return (
+    <Paper sx={welcomeStyle}>
+      
+      <Stack direction="row" spacing={2} alignItems="center">
+        <Avatar sx={avatarStyle}>
+          {user?.nama?.charAt(0) || "U"}
+        </Avatar>
+
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={nameStyle}>
+            Selamat Datang, {user?.nama?.toUpperCase()|| "USER"}
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary">
+            NIP: {user?.nip || "-"} / {user?.nama_opd || "-"} 
+          </Typography>
+        </Box>
+      </Stack>
+
+      <Box sx={{ flexShrink: 0 }}>
+        <Chip
+          label={kategoriLabel}
+          color="primary"
+          sx={chipStyle}
+        />
+      </Box>
+
+    </Paper>
+  );
+}
+
+function StatsCards2({ stats }) {
+  const items = [
+    {
+      title: "Aktivitas Total Bulan Ini",
+      value: stats.total,
+      icon: <Assignment />,
+      bg: "#e3f2fd",
+      color: "#1976d2"
+    },
+    {
+      title: "Aktivitas Disetujui Bulan Ini",
+      value: stats.disetujui,
+      icon: <CheckCircle />,
+      bg: "#f3e5f5",
+      color: "#7b1fa2"
+    },
+    {
+      title: "Aktivitas Menunggu Verifikasi",
+      value: stats.menunggu,
+      icon: <HourglassEmpty />,
+      bg: "#e8f5e9",
+      color: "#2e7d32"
+    },
+    {
+      title: "Aktivitas Ditolak",
+      value: stats.ditolak,
+      icon: <Cancel />,
+      bg: "#fff3e0",
+      color: "#ef6c00"
+    }
+  ];
+
+  return (
+    <>
+      {items.map((item, i) => (
+        <Grid item xs={12} sm={6} md={3} key={i}>
+          
+          {/* Wrapper biar center */}
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                textAlign: "center",
+                bgcolor: item.bg,
+                width: 250, 
+                maxWidth: "100%",
+                transition: "0.3s",
+                "&:hover": {
+                  transform: "translateY(-6px)",
+                  boxShadow: 4
+                }
+              }}
+            >
+              <Box sx={{ color: item.color, fontSize: 42, mb: 1 }}>
+                {item.icon}
+              </Box>
+
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 700, color: item.color }}
+              >
+                {item.value}
+              </Typography>
+
+              <Typography
+                variant="body2"
+                sx={{ color: item.color, mt: 0.5 }}
+              >
+                {item.title}
+              </Typography>
+            </Paper>
+          </Box>
+
+        </Grid>
+      ))}
+    </>
+  );
+}
+
+// ================= STYLE =================
+
+const statsWrapperStyle = {
+  width: 1400,
+  maxWidth: "100%",
+  mx: "auto",
+  p: { xs: 2, sm: 3 },
+  borderRadius: 3,
+  bgcolor: "background.paper",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+  }
+};
+
+const welcomeStyle = {
+  width: 1400,
+  maxWidth: "100%",
+  p: 3,
+  borderRadius: 3,
+  display: "flex",
+  flexDirection: { xs: "column", sm: "row" },
+  justifyContent: "space-between",
+  alignItems: { xs: "flex-start", sm: "center" },
+  gap: 2,
+  bgcolor: "background.paper",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+  }
+};
+
+const avatarStyle = {
+  width: { xs: 45, sm: 55, md: 65 },
+  height: { xs: 45, sm: 55, md: 65 },
+  bgcolor: "primary.main",
+  fontWeight: "bold",
+  fontSize: 22
+};
+
+const nameStyle = {
+  fontWeight: 600,
+  fontSize: { xs: 14, sm: 16, md: 18 },
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis"
+};
+
+const chipStyle = {
+  fontWeight: 600,
+  mt: { xs: 1, sm: 0 }
+};

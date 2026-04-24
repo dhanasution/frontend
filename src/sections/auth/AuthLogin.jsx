@@ -1,19 +1,15 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // material-ui
 import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
 import Grid from '@mui/material/Grid';
-import Link from '@mui/material/Link';
 import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 
 // third-party
 import * as Yup from 'yup';
@@ -27,126 +23,188 @@ import AnimateButton from 'components/@extended/AnimateButton';
 import EyeOutlined from '@ant-design/icons/EyeOutlined';
 import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 
-// ============================|| JWT - LOGIN ||============================ //
+// db
+import axiosInstance from "../../services/axiosInstance";
+
 
 export default function AuthLogin({ isDemo = false }) {
-  const [checked, setChecked] = React.useState(false);
+  const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = React.useState(false);
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
 
-  const handleMouseDownPassword = (event) => {
-    event.preventDefault();
-  };
+  const handleClickShowPassword = () => setShowPassword((prev) => !prev);
+  const handleMouseDownPassword = (event) => event.preventDefault();
 
   return (
-    <>
-      <Formik
-        initialValues={{
-          email: 'info@codedthemes.com',
-          password: '123456',
-          submit: null
-        }}
-        validationSchema={Yup.object().shape({
-          email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
-          password: Yup.string()
-            .required('Password is required')
-            .test('no-leading-trailing-whitespace', 'Password cannot start or end with spaces', (value) => value === value.trim())
-            .max(10, 'Password must be less than 10 characters')
-        })}
-      >
-        {({ errors, handleBlur, handleChange, touched, values }) => (
-          <form noValidate>
-            <Grid container spacing={3}>
-              <Grid size={12}>
-                <Stack sx={{ gap: 1 }}>
-                  <InputLabel htmlFor="email-login">Email Address</InputLabel>
-                  <OutlinedInput
-                    id="email-login"
-                    type="email"
-                    value={values.email}
-                    name="email"
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    placeholder="Enter email address"
-                    fullWidth
-                    error={Boolean(touched.email && errors.email)}
-                  />
-                </Stack>
-                {touched.email && errors.email && (
-                  <FormHelperText error id="standard-weight-helper-text-email-login">
-                    {errors.email}
-                  </FormHelperText>
-                )}
-              </Grid>
-              <Grid size={12}>
-                <Stack sx={{ gap: 1 }}>
-                  <InputLabel htmlFor="password-login">Password</InputLabel>
-                  <OutlinedInput
-                    fullWidth
-                    error={Boolean(touched.password && errors.password)}
-                    id="-password-login"
-                    type={showPassword ? 'text' : 'password'}
-                    value={values.password}
-                    name="password"
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    endAdornment={
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="toggle password visibility"
-                          onClick={handleClickShowPassword}
-                          onMouseDown={handleMouseDownPassword}
-                          edge="end"
-                          color="secondary"
-                        >
-                          {showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-                        </IconButton>
-                      </InputAdornment>
-                    }
-                    placeholder="Enter password"
-                  />
-                </Stack>
-                {touched.password && errors.password && (
-                  <FormHelperText error id="standard-weight-helper-text-password-login">
-                    {errors.password}
-                  </FormHelperText>
-                )}
-              </Grid>
-              <Grid sx={{ mt: -1 }} size={12}>
-                <Stack direction="row" sx={{ gap: 2, alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={checked}
-                        onChange={(event) => setChecked(event.target.checked)}
-                        name="checked"
-                        color="primary"
-                        size="small"
-                      />
-                    }
-                    label={<Typography variant="h6">Keep me sign in</Typography>}
-                  />
-                  <Link variant="h6" component={RouterLink} to="#" color="text.primary">
-                    Forgot Password?
-                  </Link>
-                </Stack>
-              </Grid>
-              <Grid size={12}>
-                <AnimateButton>
-                  <Button fullWidth size="large" variant="contained" color="primary">
-                    Login
-                  </Button>
-                </AnimateButton>
-              </Grid>
+    <Formik
+      initialValues={{ nip: '', password: '', submit: null }}
+      validationSchema={Yup.object().shape({
+        nip: Yup.string()
+          .matches(/^[0-9]+$/, 'NIP harus berupa angka')
+          .min(10, 'NIP minimal 10 digit')
+          .max(20, 'NIP maksimal 20 digit')
+          .required('NIP wajib diisi'),
+        password: Yup.string()
+          .required('Password wajib diisi')
+          .test(
+            'no-leading-trailing-whitespace',
+            'Password tidak boleh diawali/diakhiri spasi',
+            (value) => value === value?.trim()
+          )
+          .max(50, 'Password maksimal 50 karakter')
+      })}
+      onSubmit={async (values, { setSubmitting, setErrors }) => {
+        try {
+          setSubmitting(true);
+
+          const response = await axiosInstance.post(
+                "/api/auth/login",
+                {
+                  nip: values.nip,
+                  password: values.password
+                },
+                {
+                  timeout: 10000
+                }
+              );
+
+          if (!response.data?.token || !response.data?.user) {
+            throw new Error('Response tidak valid');
+          }
+
+          const { token, user } = response.data;
+
+          //  NORMALISASI ROLE (optional)
+          const userRole = user.role
+            ?.toLowerCase()
+            .replace(/\s+/g, '_')
+            .trim();
+
+          console.log('=== LOGIN SUCCESS ===');
+          console.log('USER:', user);
+          console.log('ROLE:', userRole);
+
+          // 💾 SIMPAN SESSION
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('role', userRole);
+
+          //axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+          // 🚀 REDIRECT
+          navigate('/dashboard', { replace: true });
+
+        } catch (error) {
+          console.error('❌ LOGIN ERROR:', error);
+
+          let message = 'Login gagal. Periksa NIP dan Password.';
+
+          if (error.response?.data?.message) {
+            message = error.response.data.message;
+          } else if (error.code === 'ECONNABORTED') {
+            message = 'Koneksi ke server timeout';
+          } else if (!error.response) {
+            message = 'Server tidak terhubung';
+          }
+
+          setErrors({ submit: message });
+
+        } finally {
+          setSubmitting(false);
+        }
+      }}
+    >
+      {({
+        errors,
+        handleBlur,
+        handleChange,
+        handleSubmit,
+        isSubmitting,
+        touched,
+        values
+      }) => (
+        <form noValidate onSubmit={handleSubmit}>
+          <Grid container spacing={3}>
+
+            <Grid size={12}>
+              <Stack sx={{ gap: 1 }}>
+                <InputLabel htmlFor="nip-login">NIP</InputLabel>
+                <OutlinedInput
+                  id="nip-login"
+                  type="text"
+                  value={values.nip}
+                  name="nip"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  placeholder="Masukkan NIP"
+                  fullWidth
+                  error={Boolean(touched.nip && errors.nip)}
+                />
+              </Stack>
+              {touched.nip && errors.nip && (
+                <FormHelperText error>{errors.nip}</FormHelperText>
+              )}
             </Grid>
-          </form>
-        )}
-      </Formik>
-    </>
+
+            <Grid size={12}>
+              <Stack sx={{ gap: 1 }}>
+                <InputLabel htmlFor="password-login">Password</InputLabel>
+                <OutlinedInput
+                  fullWidth
+                  id="password-login"
+                  type={showPassword ? 'text' : 'password'}
+                  value={values.password}
+                  name="password"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  error={Boolean(touched.password && errors.password)}
+                  placeholder="Masukkan Password"
+                  endAdornment={
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={handleClickShowPassword}
+                        onMouseDown={handleMouseDownPassword}
+                        edge="end"
+                      >
+                        {showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                      </IconButton>
+                    </InputAdornment>
+                  }
+                />
+              </Stack>
+              {touched.password && errors.password && (
+                <FormHelperText error>{errors.password}</FormHelperText>
+              )}
+            </Grid>
+
+            {errors.submit && (
+              <Grid size={12}>
+                <FormHelperText error>{errors.submit}</FormHelperText>
+              </Grid>
+            )}
+
+            <Grid size={12}>
+              <AnimateButton>
+                <Button
+                  disableElevation
+                  disabled={isSubmitting}
+                  fullWidth
+                  size="large"
+                  type="submit"
+                  variant="contained"
+                >
+                  Login
+                </Button>
+              </AnimateButton>
+            </Grid>
+
+          </Grid>
+        </form>
+      )}
+    </Formik>
   );
 }
 
-AuthLogin.propTypes = { isDemo: PropTypes.bool };
+AuthLogin.propTypes = {
+  isDemo: PropTypes.bool
+};

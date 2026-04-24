@@ -1,21 +1,17 @@
 // assets
 import {
-  AppstoreAddOutlined,
-  AntDesignOutlined,
-  BarcodeOutlined,
-  BgColorsOutlined,
-  FontSizeOutlined,
-  LoadingOutlined
+  EditOutlined,
+  ProfileOutlined,
+  DollarOutlined,
+  HistoryOutlined
 } from '@ant-design/icons';
 
-// icons
+// icons mapping
 const icons = {
-  FontSizeOutlined,
-  BgColorsOutlined,
-  BarcodeOutlined,
-  AntDesignOutlined,
-  LoadingOutlined,
-  AppstoreAddOutlined
+  EditOutlined,
+  ProfileOutlined,
+  DollarOutlined,
+  HistoryOutlined
 };
 
 // ==============================|| MENU ITEMS - UTILITIES ||============================== //
@@ -26,25 +22,32 @@ const utilities = {
   type: 'group',
   children: [
     {
-      id: 'util-typography',
-      title: 'Typography',
+      id: 'aktivitas',
+      title: 'Aktivitas Harian',
       type: 'item',
-      url: '/typography',
-      icon: icons.FontSizeOutlined
+      url: '/aktivitas',
+      icon: icons.EditOutlined
     },
     {
-      id: 'util-color',
-      title: 'Color',
+      id: 'rekap_aktivitas',
+      title: 'Rekap Aktivitas Harian',
       type: 'item',
-      url: '/color',
-      icon: icons.BgColorsOutlined
+      url: '/rekap_aktivitas',
+      icon: icons.ProfileOutlined
     },
     {
-      id: 'util-shadow',
-      title: 'Shadow',
+      id: 'rekap_absensi',
+      title: 'Rekap Absensi',
       type: 'item',
-      url: '/shadow',
-      icon: icons.BarcodeOutlined
+      url: '/rekap_absensi',
+      icon: icons.HistoryOutlined
+    },
+    {
+      id: 'tpp',
+      title: 'Perhitungan TPP',
+      type: 'item',
+      url: '/tpp',
+      icon: icons.DollarOutlined
     }
   ]
 };

@@ -1,30 +1,20 @@
 import { lazy } from 'react';
-
-// project imports
+import { Navigate } from 'react-router-dom';
 import Loadable from 'components/Loadable';
 
-// jwt auth
-const LoginPage = Loadable(lazy(() => import('pages/auth/Login')));
-const RegisterPage = Loadable(lazy(() => import('pages/auth/Register')));
+// load komponen login
+const LoginComponent = Loadable(lazy(() => import('pages/auth/Login')));
+
+// wrapper untuk passing role
+const LoginPage = ({ role }) => <LoginComponent role={role} />;
 
 // ==============================|| AUTH ROUTING ||============================== //
 
 const LoginRoutes = {
   path: '/',
   children: [
-    {
-      path: '/',
-      children: [
-        {
-          path: '/login',
-          element: <LoginPage />
-        },
-        {
-          path: '/register',
-          element: <RegisterPage />
-        }
-      ]
-    }
+    { index: true, element: <Navigate to="/login" replace /> },
+    { path: 'login', element: <LoginComponent /> }
   ]
 };
 

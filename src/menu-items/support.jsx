@@ -1,9 +1,9 @@
 // assets
-import { ChromeOutlined, QuestionOutlined } from '@ant-design/icons';
+import { QuestionOutlined } from '@ant-design/icons';
 
 // icons
 const icons = {
-  ChromeOutlined,
+
   QuestionOutlined
 };
 
@@ -15,17 +15,10 @@ const support = {
   type: 'group',
   children: [
     {
-      id: 'sample-page',
-      title: 'Sample Page',
-      type: 'item',
-      url: '/sample-page',
-      icon: icons.ChromeOutlined
-    },
-    {
       id: 'documentation',
       title: 'Documentation',
       type: 'item',
-      url: 'https://codedthemes.gitbook.io/mantis/',
+      url: 'https://drive.google.com/drive/folders/1xP6bzt6_jKgdruocvzzaUWrrdkcjd1az/',
       icon: icons.QuestionOutlined,
       external: true,
       target: true
